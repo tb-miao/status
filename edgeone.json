@@ -1,0 +1,29 @@
+{
+  "build": {
+    "command": "npm run build",
+    "output": "dist",
+    "install": {
+      "command": "npm ci"
+    }
+  },
+  "env": {
+    "VITE_UPTIME_API_KEYS": {
+      "description": "UptimeRobot API Keys (多个用逗号分隔)",
+      "required": true
+    },
+    "VITE_API_PROXY_URL": {
+      "description": "API 代理地址 (可选，需要自行配置 Cloudflare Worker 或其他代理)",
+      "required": false
+    },
+    "VITE_SITE_NAME": {
+      "description": "网站名称",
+      "required": false,
+      "default": "服务状态监控面板"
+    },
+    "VITE_SITE_DESCRIPTION": {
+      "description": "网站描述",
+      "required": false,
+      "default": "实时监控服务运行状态，查看历史可用性数据"
+    }
+  }
+}
