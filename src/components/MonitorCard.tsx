@@ -4,7 +4,6 @@ import {
   formatDuration,
   formatNumber,
   getStatusText,
-  getStatusColor,
   getStatusBgColor,
 } from '../utils/format';
 import { MonitorDetail } from './MonitorDetail';
@@ -146,7 +145,7 @@ export function MonitorCard({ monitor, showLink }: MonitorCardProps) {
       </div>
 
       {/* 展开详情 - 平滑动画 */}
-      <div className={`transition-all duration-300 ease-out ${expanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'} overflow-hidden`}>
+      <div className={`transition-all duration-300 ease-out ${expanded ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'} overflow-hidden`}>
         {expanded && <MonitorDetail monitor={monitor} />}
       </div>
     </article>

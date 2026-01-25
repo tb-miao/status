@@ -1,12 +1,6 @@
 # 服务状态监控面板
 
-中文 | [English](./README_EN.md)
-
 基于 UptimeRobot API 的现代化服务状态监控面板。
-
-演示地址：[https://status.javai.cn](https://status.javai.cn)
-
-![预览图](docs/images/preview.png)
 
 ## 特性
 

@@ -157,3 +157,80 @@
 .pulse-glow {
   animation: pulse-glow 2s ease-in-out infinite;
 }
+
+/* 修复滑动问题 */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.dark .scrollbar-thin {
+  scrollbar-color: #475569 #1e293b;
+}
+
+.dark .scrollbar-thin::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+
+.dark .scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+
+.dark .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* 确保滑动容器工作正常 */
+.overflow-y-auto {
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 防止滑动穿透 */
+.max-h-64 {
+  max-height: 16rem;
+  overscroll-behavior: contain;
+}
+
+/* 触摸设备优化 */
+@media (max-width: 768px) {
+  .touch-pan-y {
+    touch-action: pan-y;
+  }
+  
+  .max-h-64 {
+    max-height: 12rem;
+  }
+}
+
+/* 确保滑动容器在移动设备上的可用性 */
+.overflow-y-auto {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* 修复iOS设备上的滑动问题 */
+@supports (-webkit-touch-callout: none) {
+  .overflow-y-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+}

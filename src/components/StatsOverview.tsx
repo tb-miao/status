@@ -1,3 +1,5 @@
+import { useState, useEffect } from 'react';
+
 interface StatsProps {
   total: number;
   up: number;
@@ -22,7 +24,6 @@ export function StatsOverview({ total, up, down, paused, avgUptime, isLoading }:
   }
 
   const allOk = down === 0;
-  const uptimePercentage = avgUptime / 100;
 
   return (
     <div className="mb-8 animate-fade-in">

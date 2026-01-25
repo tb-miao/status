@@ -1,4 +1,5 @@
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { useRef, useEffect } from 'react';
 import type { ProcessedMonitor } from '../types';
 import { formatDate, formatDuration, formatRelativeTime, formatResponseTime } from '../utils/format';
 
@@ -30,6 +31,8 @@ function CustomTooltip({ active, payload, label, valueFormatter, labelText, colo
 }
 
 export function MonitorDetail({ monitor }: MonitorDetailProps) {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
   // 可用率趋势数据
   const uptimeData = [...monitor.daily].reverse().map((d) => ({
     date: d.date.format('MM-DD'),
@@ -48,6 +51,32 @@ export function MonitorDetail({ monitor }: MonitorDetailProps) {
 
   // 故障日志
   const downLogs = monitor.logs.filter((log) => log.type === 1);
+
+  // 增强滑动体验
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        e.preventDefault();
+        container.scrollTop += e.deltaY;
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      // 允许默认的触摸滑动行为
+      e.stopPropagation();
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    container.addEventListener('touchmove', handleTouchMove, { passive: true });
+
+    return () => {
+      container.removeEventListener('wheel', handleWheel);
+      container.removeEventListener('touchmove', handleTouchMove);
+    };
+  }, []);
 
   return (
     <div className="px-4 pb-4 space-y-4 bg-slate-50 dark:bg-slate-800/30">
@@ -145,14 +174,21 @@ export function MonitorDetail({ monitor }: MonitorDetailProps) {
       {/* 故障历史 */}
       {downLogs.length > 0 && (
         <div className="bg-white dark:bg-slate-800 rounded-lg p-4">
-          <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
-            故障历史 ({downLogs.length} 次)
+          <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center justify-between">
+            <span>故障历史 ({downLogs.length} 次)</span>
+            {downLogs.length > 3 && (
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-normal">可滑动查看</span>
+            )}
           </h4>
-          <div className="space-y-3 max-h-48 overflow-y-auto">
+          <div 
+            ref={scrollContainerRef}
+            className="space-y-3 max-h-64 overflow-y-auto scrollbar-thin touch-pan-y" 
+            style={{ scrollBehavior: 'smooth' }}
+          >
             {downLogs.slice(0, 10).map((log, idx) => (
               <div 
                 key={idx}
-                className="text-sm py-2 border-b border-slate-100 dark:border-slate-700 last:border-0"
+                className="text-sm py-2 border-b border-slate-100 dark:border-slate-700 last:border-0 select-none"
               >
                 {/* 时间行 */}
                 <div className="flex items-center justify-between gap-2 mb-1">
