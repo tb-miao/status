@@ -30,24 +30,25 @@ export function Select({ value, options, onChange, className = '', 'aria-label':
   }, []);
 
   return (
-    <div ref={ref} className={`relative ${className}`}>
+    <div ref={ref} className={`relative group ${className}`}>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         aria-label={ariaLabel}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
-        className="flex items-center justify-between gap-2 px-3 py-2 min-w-[90px]
-                   bg-white dark:bg-slate-800 
-                   border border-slate-200 dark:border-slate-700 
-                   rounded-lg text-sm text-slate-700 dark:text-slate-200
-                   hover:border-slate-300 dark:hover:border-slate-600
-                   focus:outline-none focus:ring-2 focus:ring-green-500/50
-                   transition-colors"
+        className="flex items-center justify-between gap-2 px-4 py-2.5 min-w-[90px]
+                   bg-white/50 dark:bg-slate-800/50 
+                   border border-slate-200/50 dark:border-slate-700/30 
+                   rounded-xl text-sm text-slate-700 dark:text-slate-200
+                   hover:border-slate-300/70 dark:hover:border-slate-600/50
+                   focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50
+                   backdrop-blur-sm transition-all duration-200
+                   shadow-sm hover:shadow-md group-hover:scale-[1.02]"
       >
-        <span className="truncate">{selectedOption?.label}</span>
+        <span className="truncate font-medium">{selectedOption?.label}</span>
         <svg 
-          className={`w-4 h-4 text-slate-400 transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 text-slate-400 transition-all duration-300 flex-shrink-0 ${isOpen ? 'rotate-180 scale-110' : 'group-hover:scale-110'}`}
           fill="none" 
           viewBox="0 0 24 24" 
           stroke="currentColor"
@@ -59,14 +60,15 @@ export function Select({ value, options, onChange, className = '', 'aria-label':
 
       {isOpen && (
         <div 
-          className="absolute z-50 mt-1 w-full min-w-[120px]
-                      bg-white dark:bg-slate-800 
-                      border border-slate-200 dark:border-slate-700 
-                      rounded-lg shadow-lg overflow-hidden"
+          className="absolute z-50 mt-2 w-full min-w-[120px]
+                      bg-white/80 dark:bg-slate-800/80 
+                      border border-slate-200/50 dark:border-slate-700/30 
+                      rounded-xl shadow-xl backdrop-blur-md overflow-hidden
+                      animate-slide-down origin-top"
           role="listbox"
           aria-label={ariaLabel}
         >
-          {options.map((option) => (
+          {options.map((option, index) => (
             <button
               key={option.value}
               type="button"
@@ -76,11 +78,15 @@ export function Select({ value, options, onChange, className = '', 'aria-label':
                 onChange(option.value);
                 setIsOpen(false);
               }}
-              className={`w-full px-3 py-2 text-left text-sm transition-colors
+              className={`w-full px-4 py-3 text-left text-sm transition-all duration-200
                 ${option.value === value 
-                  ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400' 
-                  : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
-                }`}
+                  ? 'bg-green-100/50 dark:bg-green-900/30 text-green-600 dark:text-green-400 font-medium' 
+                  : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100/50 dark:hover:bg-slate-700/30'
+                }
+                hover:pl-5 hover:scale-[1.01] active:scale-95
+                border-b border-slate-100/50 dark:border-slate-700/20 last:border-b-0
+                animate-fade-in`}
+              style={{ animationDelay: `${index * 50}ms` }}
             >
               {option.label}
             </button>

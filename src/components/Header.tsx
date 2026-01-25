@@ -1,28 +1,79 @@
 import { useTheme } from '../hooks/useTheme';
 import { useAppStore } from '../store';
 import { getConfig } from '../config';
+import { useState, useEffect } from 'react';
 
 export function Header() {
   const { theme, setTheme } = useTheme();
   const embedMode = useAppStore((s) => s.embedMode);
   const config = getConfig();
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 10);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   if (embedMode) return null;
 
   return (
-    <header className="bg-slate-900 text-white relative z-10" role="banner">
+    <header 
+      className={`relative z-50 transition-all duration-300 ${
+        scrolled 
+          ? 'bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-lg border-b border-white/20 dark:border-slate-700/30' 
+          : 'bg-transparent'
+      }`} 
+      role="banner"
+    >
       {/* 跳过链接 */}
       <a 
         href="#main-content" 
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 
-                   bg-green-500 text-white px-4 py-2 rounded-lg z-50"
+                   bg-gradient-to-r from-green-500 to-blue-500 text-white px-4 py-2 rounded-lg z-50"
       >
         跳到主要内容
       </a>
-      <nav className="max-w-6xl mx-auto px-4 py-6 flex items-center justify-between" aria-label="主导航">
-        <h1 className="text-xl font-bold text-green-400">{config.siteName}</h1>
+      
+      {/* 渐变背景装饰 */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-green-400/10 via-blue-500/10 to-purple-500/10 dark:from-green-400/5 dark:via-blue-500/5 dark:to-purple-500/5"></div>
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-green-400/5 via-transparent to-transparent"></div>
+      </div>
+      
+      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 relative z-10" aria-label="主导航">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+              {/* Logo图标 */}
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center shadow-lg">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
+                  {config.siteName}
+                </h1>
+                <p className="text-sm text-slate-500 dark:text-slate-400 hidden sm:block">
+                  {config.siteDescription}
+                </p>
+              </div>
+            </div>
+          </div>
 
-        <ThemeToggle theme={theme} setTheme={setTheme} />
+          <div className="flex items-center gap-3">
+            {/* 在线状态指示器 */}
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-100/80 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-sm font-medium backdrop-blur-sm border border-green-200/50 dark:border-green-800/30">
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+              系统在线
+            </div>
+            
+            <ThemeToggle theme={theme} setTheme={setTheme} />
+          </div>
+        </div>
       </nav>
     </header>
   );
@@ -46,25 +97,33 @@ function ThemeToggle({
   return (
     <button
       onClick={nextTheme}
-      className="p-2 rounded-lg hover:bg-slate-800 transition-colors text-slate-300 hover:text-white"
+      className="group relative p-2.5 rounded-xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm 
+                 border border-white/30 dark:border-slate-700/30 
+                 hover:bg-white/70 dark:hover:bg-slate-800/70 
+                 hover:scale-105 hover:shadow-lg transition-all duration-200"
       title={`当前: ${themeLabel}，点击切换`}
       aria-label={`切换主题，当前: ${themeLabel}`}
     >
-      {theme === 'light' && (
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-        </svg>
-      )}
-      {theme === 'dark' && (
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-        </svg>
-      )}
-      {theme === 'system' && (
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-        </svg>
-      )}
+      <div className="relative">
+        {theme === 'light' && (
+          <svg className="w-5 h-5 text-yellow-500 group-hover:text-yellow-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+        )}
+        {theme === 'dark' && (
+          <svg className="w-5 h-5 text-blue-400 group-hover:text-blue-300 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+          </svg>
+        )}
+        {theme === 'system' && (
+          <svg className="w-5 h-5 text-green-500 group-hover:text-green-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+        )}
+        
+        {/* 脉冲动画背景 */}
+        <div className="absolute inset-0 rounded-full bg-gradient-to-r from-green-400/20 to-blue-500/20 animate-ping opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+      </div>
     </button>
   );
 }
