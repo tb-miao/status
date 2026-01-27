@@ -105,7 +105,7 @@ const HCaptchaWrapper: React.FC<HCaptchaWrapperProps> = ({
               sitekey,
               theme,
               callback: (token: string) => {
-                console.log('hCaptcha verified:', token);
+                console.log('hCaptcha verified: 完成');
                 onVerify(token);
               },
               'expired-callback': () => {
