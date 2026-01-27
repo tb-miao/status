@@ -89,7 +89,7 @@ const config: AppConfig = {
   // ===== 密码保护配置 =====
 
   // 是否启用密码保护
-  enablePasswordProtection: getPasswordProtection(),
+  enablePasswordProtection: getPasswordProtection() === 'true',
 
   // 访问密码（从环境变量读取）
   password: getPassword(),

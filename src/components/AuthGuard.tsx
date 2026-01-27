@@ -1,4 +1,4 @@
-import React, { useState, useEffect, createContext, useContext, useRef } from 'react';
+import React, { useState, useEffect, createContext, useContext } from 'react';
 import { getConfig } from '../config';
 import HCaptchaWrapper from './HCaptchaWrapper';
 
