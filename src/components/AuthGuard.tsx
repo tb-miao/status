@@ -97,7 +97,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
       if (config.enableHCaptcha && captchaToken) {
         // 这里可以添加服务端验证逻辑
         // 由于是纯前端应用，我们只做基本的客户端验证
-        console.log('hCaptcha token:', captchaToken);
+        console.log('完成');
       }
 
       // 验证密码
@@ -136,6 +136,13 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   // 处理hCaptcha过期
   const handleCaptchaExpire = () => {
     setCaptchaToken('');
+    // 延迟重新挂载验证码组件，避免重复渲染问题
+    setTimeout(() => {
+      if (!isAuthenticated) { // 确保仍然需要验证
+        // 强制重新挂载验证码组件
+        setCaptchaToken('');
+      }
+    }, 500);
   };
 
   // 如果已通过认证，显示内容
@@ -169,7 +176,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
             需要密码访问
           </h2>
           <p className="text-slate-500 dark:text-slate-400">
-            请输入访问密码以继续
+            请输入访问密码以继续，出现无法登陆问题请提交Issues。
           </p>
         </div>
 
@@ -200,6 +207,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
           {config.enableHCaptcha && config.hCaptchaSiteKey && (
             <div className="flex justify-center">
               <HCaptchaWrapper
+                key={captchaToken || 'initial'}
                 sitekey={config.hCaptchaSiteKey}
                 onVerify={handleCaptchaVerify}
                 onExpire={handleCaptchaExpire}

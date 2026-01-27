@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 interface HCaptchaWrapperProps {
   sitekey: string;
@@ -17,6 +17,8 @@ const HCaptchaWrapper: React.FC<HCaptchaWrapperProps> = ({
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string>('');
+  const containerRef = useRef<HTMLDivElement>(null);
+  const isRenderingRef = useRef(false);
 
   useEffect(() => {
     // 检查hCaptcha脚本是否已加载
@@ -75,12 +77,27 @@ const HCaptchaWrapper: React.FC<HCaptchaWrapperProps> = ({
   useEffect(() => {
     if (!isLoaded) return;
 
+    // 防止重复渲染
+    if (isRenderingRef.current) return;
+    isRenderingRef.current = true;
+
     const renderHCaptcha = () => {
       try {
         const element = document.getElementById('hcaptcha-container');
         if (!element) return;
 
-        // 清除现有的hCaptcha
+        // 检查是否已经存在hCaptcha实例
+        const existingWidgetId = element.getAttribute('data-hcaptcha-widget-id');
+        if (existingWidgetId && (window as any).hcaptcha) {
+          // 如果已经存在实例，先重置它
+          try {
+            (window as any).hcaptcha.reset(existingWidgetId);
+          } catch (error) {
+            console.warn('Error resetting existing hCaptcha:', error);
+          }
+        }
+
+        // 清除现有的hCaptcha DOM元素
         const existingWidget = element.querySelector('.h-captcha');
         if (existingWidget) {
           existingWidget.remove();
@@ -103,21 +120,28 @@ const HCaptchaWrapper: React.FC<HCaptchaWrapperProps> = ({
       } catch (error) {
         console.error('Error rendering hCaptcha:', error);
         setLoadError('hCaptcha 渲染失败，请刷新页面重试');
+      } finally {
+        isRenderingRef.current = false;
       }
     };
 
-    // 等待DOM更新
-    const timeoutId = setTimeout(renderHCaptcha, 100);
+    // 等待DOM更新，使用更长的延迟避免React StrictMode的重复渲染问题
+    const timeoutId = setTimeout(renderHCaptcha, 300);
 
     return () => {
       clearTimeout(timeoutId);
+      isRenderingRef.current = false;
       // 清理hCaptcha实例
       try {
         const element = document.getElementById('hcaptcha-container');
         if (element) {
           const widgetId = element.getAttribute('data-hcaptcha-widget-id');
           if (widgetId && (window as any).hcaptcha) {
-            (window as any).hcaptcha.reset(widgetId);
+            try {
+              (window as any).hcaptcha.reset(widgetId);
+            } catch (error) {
+              console.warn('Error resetting hCaptcha on cleanup:', error);
+            }
           }
           element.removeAttribute('data-hcaptcha-widget-id');
         }
@@ -127,24 +151,23 @@ const HCaptchaWrapper: React.FC<HCaptchaWrapperProps> = ({
     };
   }, [isLoaded, sitekey, theme, onVerify, onExpire]);
 
-  if (loadError) {
-    return (
-      <div className="text-center text-red-500 dark:text-red-400 text-sm bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">
-        {loadError}
-      </div>
-    );
-  }
-
-  if (!isLoaded) {
-    return (
-      <div className="text-center text-slate-500 dark:text-slate-400">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto mb-2"></div>
-        加载人机验证...
-      </div>
-    );
-  }
-
-  return <div id="hcaptcha-container" className="flex justify-center"></div>;
+  return (
+    <div className="hcaptcha-wrapper">
+      <div id="hcaptcha-container" ref={containerRef} className="flex justify-center"></div>
+      {loadError && (
+        <div className="text-center text-red-500 dark:text-red-400 text-sm bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">
+          <p>{loadError}</p>
+          <button onClick={() => window.location.reload()}>刷新页面</button>
+        </div>
+      )}
+      {!isLoaded && !loadError && (
+        <div className="text-center text-slate-500 dark:text-slate-400">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto mb-2"></div>
+          加载人机验证...
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default HCaptchaWrapper;
