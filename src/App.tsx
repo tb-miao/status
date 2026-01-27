@@ -6,6 +6,7 @@ import { Toolbar } from './components/Toolbar';
 import { MonitorList } from './components/MonitorList';
 import { IncidentList } from './components/IncidentList';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import AuthGuard from './components/AuthGuard';
 import { useMonitors } from './hooks/useMonitors';
 import { useNotification } from './hooks/useNotification';
 import { useTheme } from './hooks/useTheme';
@@ -114,58 +115,60 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <div className={`min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 ${embedMode ? 'p-4' : ''}`}>
-        <Header />
-        
-        <main id="main-content" className={`max-w-7xl mx-auto px-4 ${embedMode ? '' : 'pt-6'} pb-8`} role="main">
-          {!embedMode && (
-            <>
-              <StatsOverview {...stats} isLoading={isLoading} />
-              <Toolbar onRefresh={refetch} isLoading={isFetching} lastUpdated={lastUpdated} />
-            </>
-          )}
+      <AuthGuard>
+        <div className={`min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 ${embedMode ? 'p-4' : ''}`}>
+          <Header />
           
-          {/* 嵌入模式简易工具栏 */}
-          {embedMode && (
-            <div className="flex items-center justify-end gap-2 mb-4">
-              <span className="text-xs text-slate-400" aria-live="polite">
-                {lastUpdated && `更新于 ${new Date(lastUpdated).toLocaleTimeString('zh-CN')}`}
-              </span>
-              <button
-                onClick={() => refetch()}
-                disabled={isFetching}
-                className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 
-                           text-slate-500 hover:text-slate-700 dark:hover:text-slate-300
-                           transition-colors disabled:opacity-50"
-                title="刷新数据"
-                aria-label="刷新监控数据"
-              >
-                <svg className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-              </button>
-            </div>
-          )}
-
-          <div className={`grid ${embedMode ? '' : 'lg:grid-cols-3'} gap-8`}>
-            <div className={embedMode ? '' : 'lg:col-span-2'}>
-              <MonitorList 
-                monitors={monitors} 
-                isLoading={isLoading}
-                showLink={showLink}
-              />
-            </div>
-            
+          <main id="main-content" className={`max-w-7xl mx-auto px-4 ${embedMode ? '' : 'pt-6'} pb-8`} role="main">
             {!embedMode && (
-              <div className="space-y-6">
-                <IncidentList incidents={incidents} isLoading={isLoading} />
+              <>
+                <StatsOverview {...stats} isLoading={isLoading} />
+                <Toolbar onRefresh={refetch} isLoading={isFetching} lastUpdated={lastUpdated} />
+              </>
+            )}
+            
+            {/* 嵌入模式简易工具栏 */}
+            {embedMode && (
+              <div className="flex items-center justify-end gap-2 mb-4">
+                <span className="text-xs text-slate-400" aria-live="polite">
+                  {lastUpdated && `更新于 ${new Date(lastUpdated).toLocaleTimeString('zh-CN')}`}
+                </span>
+                <button
+                  onClick={() => refetch()}
+                  disabled={isFetching}
+                  className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 
+                             text-slate-500 hover:text-slate-700 dark:hover:text-slate-300
+                             transition-colors disabled:opacity-50"
+                  title="刷新数据"
+                  aria-label="刷新监控数据"
+                >
+                  <svg className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </button>
               </div>
             )}
-          </div>
-        </main>
 
-        <Footer />
-      </div>
+            <div className={`grid ${embedMode ? '' : 'lg:grid-cols-3'} gap-8`}>
+              <div className={embedMode ? '' : 'lg:col-span-2'}>
+                <MonitorList 
+                  monitors={monitors} 
+                  isLoading={isLoading}
+                  showLink={showLink}
+                />
+              </div>
+              
+              {!embedMode && (
+                <div className="space-y-6">
+                  <IncidentList incidents={incidents} isLoading={isLoading} />
+                </div>
+              )}
+            </div>
+          </main>
+
+          <Footer />
+        </div>
+      </AuthGuard>
     </ErrorBoundary>
   );
 }

@@ -26,6 +26,26 @@ function getSiteDescription(): string {
   return import.meta.env.VITE_SITE_DESCRIPTION || '实时监控服务运行状态，查看历史可用性数据';
 }
 
+function getPasswordProtection(): string {
+  return import.meta.env.VITE_ENABLE_PASSWORD_PROTECTION || 'true';
+}
+
+function getPassword(): string {
+  return import.meta.env.VITE_PASSWORD || '123456';
+}
+
+function getHCaptchaEnabled(): boolean {
+  return import.meta.env.VITE_ENABLE_HCAPTCHA === 'true';
+}
+
+function getHCaptchaSiteKey(): string {
+  return import.meta.env.VITE_HCAPTCHA_SITE_KEY || '778c6c34-93b0-49c4-830e-1ad2f434ab98';//开发环境默认值（示例 Key）
+}
+
+function getHCaptchaSecret(): string {
+  return import.meta.env.VITE_HCAPTCHA_SECRET || '';
+}
+
 /**
  * 应用配置文件
  * EdgeOne Pages 部署时通过环境变量配置
@@ -55,7 +75,7 @@ const config: AppConfig = {
   countDays: 30,
 
   // 是否显示站点链接
-  showLink: true,
+  showLink: false,
 
   // 默认主题 ('light' | 'dark' | 'system')
   defaultTheme: 'system',
@@ -65,6 +85,25 @@ const config: AppConfig = {
 
   // 默认状态筛选 ('all' | 'ok' | 'down')
   defaultFilter: 'all',
+
+  // ===== 密码保护配置 =====
+
+  // 是否启用密码保护
+  enablePasswordProtection: getPasswordProtection(),
+
+  // 访问密码（从环境变量读取）
+  password: getPassword(),
+
+  // ===== hCaptcha 人机验证配置 =====
+
+  // 是否启用 hCaptcha
+  enableHCaptcha: getHCaptchaEnabled(),
+
+  // hCaptcha 站点密钥
+  hCaptchaSiteKey: getHCaptchaSiteKey(),
+
+  // hCaptcha 密钥（服务端验证用）
+  hCaptchaSecret: getHCaptchaSecret(),
 
   // ===== 缓存配置（单位：秒）=====
 

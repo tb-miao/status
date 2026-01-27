@@ -24,22 +24,16 @@ export function Footer() {
       <p className="mt-1">
         Powered by{' '}
         <a
-          href="https://github.com/lyhxx/uptime-status"
+          href="https://github.com/tb-miao/status"
           target="_blank"
           rel="noopener noreferrer"
           className="text-green-500 hover:underline"
         >
-          Uptime Status
+          Status
         </a>
       </p>
-      <p className="mt-3 flex items-center justify-center gap-4 text-xs">
-        <span>
-          今日访问 <span id="busuanzi_today_pv" className="text-green-500">-</span> 次
-        </span>
-        <span className="text-slate-300 dark:text-slate-600">|</span>
-        <span>
-          总访问 <span id="busuanzi_site_pv" className="text-green-500">-</span> 次
-        </span>
+      <p className="mt-1">
+        Version 4.0
       </p>
     </footer>
   );

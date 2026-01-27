@@ -8,6 +8,13 @@ export interface AppConfig {
   defaultTheme: 'light' | 'dark' | 'system';
   defaultSort: 'name' | 'status' | 'uptime';
   defaultFilter: 'all' | 'ok' | 'down' | 'paused';
+  // 密码保护配置
+  enablePasswordProtection: boolean;
+  password?: string;
+  // hCaptcha 配置
+  enableHCaptcha: boolean;
+  hCaptchaSiteKey?: string;
+  hCaptchaSecret?: string;
   // 缓存配置（单位：秒）
   refetchInterval: number;    // 自动刷新间隔
   staleTime: number;          // 数据新鲜时间

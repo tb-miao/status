@@ -2,12 +2,16 @@ import { useTheme } from '../hooks/useTheme';
 import { useAppStore } from '../store';
 import { getConfig } from '../config';
 import { useState, useEffect } from 'react';
+import { useAuth } from './AuthGuard';
 
 export function Header() {
   const { theme, setTheme } = useTheme();
   const embedMode = useAppStore((s) => s.embedMode);
   const config = getConfig();
   const [scrolled, setScrolled] = useState(false);
+  
+  // 获取认证相关功能（仅在密码保护启用时可用）
+  const auth = config.enablePasswordProtection ? useAuth() : null;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -55,7 +59,7 @@ export function Header() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
-                  {config.siteName}
+                  {config.siteName}V4.0
                 </h1>
                 <p className="text-sm text-slate-500 dark:text-slate-400 hidden sm:block">
                   {config.siteDescription}
@@ -70,6 +74,26 @@ export function Header() {
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
               系统在线
             </div>
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-100/80 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-sm font-medium backdrop-blur-sm border border-green-200/50 dark:border-green-800/30">
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+              <a href='https://tbmiao.dpdns.org' target='_blank' rel='主站'>
+                回到主站
+              </a>
+            </div>
+            
+            {/* 退出登录按钮（仅在密码保护启用时显示） */}
+            {auth && (
+              <button
+                onClick={auth.onLogout}
+                className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-100/80 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm font-medium backdrop-blur-sm border border-red-200/50 dark:border-red-800/30 hover:bg-red-200/80 dark:hover:bg-red-800/40 transition-all duration-200"
+                title="退出登录"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                退出登录
+              </button>
+            )}
             
             <ThemeToggle theme={theme} setTheme={setTheme} />
           </div>
