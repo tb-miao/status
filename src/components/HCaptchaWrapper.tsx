@@ -19,6 +19,7 @@ const HCaptchaWrapper: React.FC<HCaptchaWrapperProps> = ({
   const [loadError, setLoadError] = useState<string>('');
   const containerRef = useRef<HTMLDivElement>(null);
   const isRenderingRef = useRef(false);
+  const widgetIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     // 检查hCaptcha脚本是否已加载
@@ -86,37 +87,47 @@ const HCaptchaWrapper: React.FC<HCaptchaWrapperProps> = ({
         const element = document.getElementById('hcaptcha-container');
         if (!element) return;
 
-        // 检查是否已经存在hCaptcha实例
-        const existingWidgetId = element.getAttribute('data-hcaptcha-widget-id');
-        if (existingWidgetId && (window as any).hcaptcha) {
-          // 如果已经存在实例，先重置它
+        // 确保容器是空的，避免重复渲染
+        element.innerHTML = '';
+
+        // 等待一小段时间确保DOM完全清空
+        setTimeout(() => {
           try {
-            (window as any).hcaptcha.reset(existingWidgetId);
-          } catch (error) {
-            console.warn('Error resetting existing hCaptcha:', error);
+            // 再次检查容器是否存在且为空
+            const container = document.getElementById('hcaptcha-container');
+            if (!container || container.children.length > 0) {
+              console.warn('Container not ready or not empty');
+              return;
+            }
+
+            // 渲染新的hCaptcha
+            const widgetId = (window as any).hcaptcha.render('hcaptcha-container', {
+              sitekey,
+              theme,
+              callback: (token: string) => {
+                console.log('hCaptcha verified:', token);
+                onVerify(token);
+              },
+              'expired-callback': () => {
+                console.log('hCaptcha expired');
+                setLoadError('hCaptcha 验证已过期，请重新验证');
+                onExpire();
+              },
+              'error-callback': (error: any) => {
+                console.error('hCaptcha error:', error);
+                setLoadError('hCaptcha 验证出错，请重试');
+                onExpire();
+              }
+            });
+
+            // 存储widget ID以便后续清理
+            container.setAttribute('data-hcaptcha-widget-id', widgetId);
+            widgetIdRef.current = widgetId;
+          } catch (renderError) {
+            console.error('Error rendering hCaptcha in setTimeout:', renderError);
+            setLoadError('hCaptcha 渲染失败，请刷新页面重试');
           }
-        }
-
-        // 清除现有的hCaptcha DOM元素
-        const existingWidget = element.querySelector('.h-captcha');
-        if (existingWidget) {
-          existingWidget.remove();
-        }
-
-        // 渲染新的hCaptcha
-        const widgetId = (window as any).hcaptcha.render('hcaptcha-container', {
-          sitekey,
-          theme,
-          callback: onVerify,
-          'expired-callback': onExpire,
-          'error-callback': () => {
-            setLoadError('hCaptcha 验证出错，请重试');
-            onExpire();
-          }
-        });
-
-        // 存储widget ID以便后续清理
-        element.setAttribute('data-hcaptcha-widget-id', widgetId);
+        }, 100);
       } catch (error) {
         console.error('Error rendering hCaptcha:', error);
         setLoadError('hCaptcha 渲染失败，请刷新页面重试');
@@ -126,7 +137,7 @@ const HCaptchaWrapper: React.FC<HCaptchaWrapperProps> = ({
     };
 
     // 等待DOM更新，使用更长的延迟避免React StrictMode的重复渲染问题
-    const timeoutId = setTimeout(renderHCaptcha, 300);
+    const timeoutId = setTimeout(renderHCaptcha, 500);
 
     return () => {
       clearTimeout(timeoutId);
@@ -135,15 +146,19 @@ const HCaptchaWrapper: React.FC<HCaptchaWrapperProps> = ({
       try {
         const element = document.getElementById('hcaptcha-container');
         if (element) {
-          const widgetId = element.getAttribute('data-hcaptcha-widget-id');
+          const widgetId = widgetIdRef.current || element.getAttribute('data-hcaptcha-widget-id');
           if (widgetId && (window as any).hcaptcha) {
             try {
+              console.log('Resetting hCaptcha widget:', widgetId);
               (window as any).hcaptcha.reset(widgetId);
             } catch (error) {
               console.warn('Error resetting hCaptcha on cleanup:', error);
             }
           }
+          // 清空容器内容
+          element.innerHTML = '';
           element.removeAttribute('data-hcaptcha-widget-id');
+          widgetIdRef.current = null;
         }
       } catch (error) {
         console.error('Error cleaning up hCaptcha:', error);

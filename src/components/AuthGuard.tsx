@@ -31,6 +31,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   const [captchaToken, setCaptchaToken] = useState<string>('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>('light');
+  const [captchaKey, setCaptchaKey] = useState<number>(0); // 用于强制重新渲染验证码
 
   // 检查是否已经通过认证（使用 sessionStorage）
   useEffect(() => {
@@ -101,15 +102,17 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
       }
 
       // 验证密码
-      if (password === config.password) {
-        setIsAuthenticated(true);
-        sessionStorage.setItem('uptime-status-authenticated', 'true');
-      } else {
-        setError('密码错误，请重试');
-        setPassword('');
-        // 重置hCaptcha
-        setCaptchaToken('');
-      }
+    if (password === config.password) {
+      setIsAuthenticated(true);
+      sessionStorage.setItem('uptime-status-authenticated', 'true');
+    } else {
+      setError('密码错误，请重试');
+      setPassword('');
+      // 重置hCaptcha
+      setCaptchaToken('');
+      // 增加验证码key值，强制重新渲染
+      setCaptchaKey(prev => prev + 1);
+    }
     } catch (error) {
       setError('验证失败，请重试');
       console.error('Verification error:', error);
@@ -125,6 +128,8 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
     setPassword('');
     setError('');
     setCaptchaToken('');
+    // 重置验证码key值
+    setCaptchaKey(0);
   };
 
   // 处理hCaptcha验证
@@ -136,10 +141,13 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   // 处理hCaptcha过期
   const handleCaptchaExpire = () => {
     setCaptchaToken('');
+    // 增加验证码key值，强制重新渲染组件
+    setCaptchaKey(prev => prev + 1);
+    console.log('hCaptcha expired, resetting with new key:', captchaKey + 1);
     // 延迟重新挂载验证码组件，避免重复渲染问题
     setTimeout(() => {
       if (!isAuthenticated) { // 确保仍然需要验证
-        // 强制重新挂载验证码组件
+        // 强制重新挂载验证码组件，通过改变key值
         setCaptchaToken('');
       }
     }, 500);
@@ -207,7 +215,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
           {config.enableHCaptcha && config.hCaptchaSiteKey && (
             <div className="flex justify-center">
               <HCaptchaWrapper
-                key={captchaToken || 'initial'}
+                key={`${captchaKey}-${captchaToken || 'initial'}`}
                 sitekey={config.hCaptchaSiteKey}
                 onVerify={handleCaptchaVerify}
                 onExpire={handleCaptchaExpire}
