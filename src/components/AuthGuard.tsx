@@ -184,7 +184,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
             需要密码访问
           </h2>
           <p className="text-slate-500 dark:text-slate-400">
-            请输入访问密码以继续，出现无法登陆问题请提交Issues。
+            请输入访问密码以继续，出现无法登陆问题请提交<a href='https://github.com/tb-miao/status/issues' target="_blank" className="text-green-500 dark:text-green-400 hover:underline">Issues</a>。
           </p>
         </div>
 
