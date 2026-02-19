@@ -42,9 +42,9 @@ export function MonitorCard({ monitor, showLink }: MonitorCardProps) {
   }, [monitor.average]);
 
   return (
-    <article className="glass-card mb-4 hover-lift group animate-slide-up overflow-hidden">
+    <article className="anime-card mb-4 overflow-hidden">
       <div 
-        className="p-6 cursor-pointer hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-all duration-300"
+        className="p-6 cursor-pointer"
         onClick={() => setExpanded(!expanded)}
         role="button"
         tabIndex={0}
@@ -61,13 +61,13 @@ export function MonitorCard({ monitor, showLink }: MonitorCardProps) {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             {/* 状态指示器 */}
-            <div className={`w-3 h-3 rounded-full ${
-              monitor.status === 'ok' ? 'bg-green-500 animate-pulse shadow-lg shadow-green-500/50' :
-              monitor.status === 'down' ? 'bg-red-500 shadow-lg shadow-red-500/50' :
-              monitor.status === 'paused' ? 'bg-yellow-500 shadow-lg shadow-yellow-500/50' :
+            <div className={`w-4 h-4 rounded-full ${
+              monitor.status === 'ok' ? 'bg-anime-green shadow-lg shadow-anime-green/50' :
+              monitor.status === 'down' ? 'bg-anime-red shadow-lg shadow-anime-red/50' :
+              monitor.status === 'paused' ? 'bg-anime-yellow shadow-lg shadow-anime-yellow/50' :
               'bg-slate-500 shadow-lg shadow-slate-500/50'
             }`}></div>
-            <span className="font-semibold text-slate-900 dark:text-white text-lg group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
+            <span className="font-semibold text-purple-900 dark:text-purple-100 text-lg group-hover:text-pink-600 dark:group-hover:text-pink-400 transition-colors">
               {monitor.name}
             </span>
             {showLink && (
@@ -76,7 +76,7 @@ export function MonitorCard({ monitor, showLink }: MonitorCardProps) {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-green-500 hover:bg-green-100/50 dark:hover:bg-green-900/30 transition-all"
+                className="p-1.5 rounded-lg text-slate-400"
                 aria-label={`访问 ${monitor.name} 网站`}
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -95,9 +95,9 @@ export function MonitorCard({ monitor, showLink }: MonitorCardProps) {
             }`}>
               {getStatusText(monitor.status)}
             </div>
-            <div className="flex items-center gap-1 text-slate-400 text-sm">
-              <span className="font-medium">{animatedUptime}%</span>
-              <span className={`transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}>
+            <div className="flex items-center gap-1 text-purple-500 dark:text-purple-300 text-sm">
+              <span className="font-medium anime-gradient-text">{animatedUptime}%</span>
+              <span className={`${expanded ? 'rotate-180' : ''}`}>
                 ▼
               </span>
             </div>
@@ -105,7 +105,7 @@ export function MonitorCard({ monitor, showLink }: MonitorCardProps) {
         </div>
 
         {/* 时间线 - 更现代化的设计 */}
-        <div className="flex gap-1 mb-4 p-2 rounded-xl bg-slate-100/50 dark:bg-slate-800/30">
+        <div className="flex gap-1 mb-4 p-2 rounded-xl bg-pink-100/50 dark:bg-purple-800/30">
           {monitor.daily.map((day, idx) => {
             let status = 'none';
             if (day.uptime >= 100) status = 'ok';
@@ -120,7 +120,7 @@ export function MonitorCard({ monitor, showLink }: MonitorCardProps) {
             return (
               <div
                 key={idx}
-                className={`status-bar ${getStatusBgColor(status)} hover:scale-110`}
+                className={`status-bar ${getStatusBgColor(status)}`}
                 title={tooltip}
               />
             );
@@ -130,22 +130,22 @@ export function MonitorCard({ monitor, showLink }: MonitorCardProps) {
         {/* 摘要信息 */}
         <div className="flex justify-between items-center text-sm">
           <div className="flex items-center gap-2">
-            <span className="text-slate-500 dark:text-slate-400">最近{countDays}天</span>
-            <div className="h-1 w-1 rounded-full bg-slate-400"></div>
-            <span className="text-slate-600 dark:text-slate-300 font-medium">
+            <span className="text-purple-500 dark:text-purple-400">最近{countDays}天</span>
+            <div className="h-1 w-1 rounded-full bg-purple-400"></div>
+            <span className="text-purple-700 dark:text-purple-300 font-medium">
               {monitor.total.times > 0
                 ? `故障 ${monitor.total.times} 次`
                 : '无故障记录'}
             </span>
           </div>
-          <div className="text-slate-500 dark:text-slate-400">
+          <div className="text-purple-500 dark:text-purple-400">
             {monitor.daily[monitor.daily.length - 1]?.date.format('MM-DD')}
           </div>
         </div>
       </div>
 
-      {/* 展开详情 - 平滑动画 */}
-      <div className={`transition-all duration-300 ease-out ${expanded ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'} overflow-hidden`}>
+      {/* 展开详情 */}
+      <div className={`${expanded ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'} overflow-hidden`}>
         {expanded && <MonitorDetail monitor={monitor} />}
       </div>
     </article>

@@ -6,55 +6,42 @@ export default {
     extend: {
       colors: {
         primary: {
-          50: '#f0fdf4',
-          100: '#dcfce7',
-          200: '#bbf7d0',
-          300: '#86efac',
-          400: '#4ade80',
-          500: '#22c55e',
-          600: '#16a34a',
-          700: '#15803d',
-          800: '#166534',
-          900: '#14532d',
+          50: '#fff7ff',
+          100: '#ffedff',
+          200: '#ffd7ff',
+          300: '#ffb3ff',
+          400: '#ff80ff',
+          500: '#ff4dff',
+          600: '#e600e6',
+          700: '#cc00cc',
+          800: '#b300b3',
+          900: '#990099',
+        },
+        // 二次元风格颜色
+        anime: {
+          pink: '#ff77aa',
+          blue: '#77ccff',
+          purple: '#aa77ff',
+          yellow: '#ffcc77',
+          green: '#77ffaa',
+          red: '#ff7777',
         },
         // 状态颜色
         status: {
-          up: '#10b981',
-          down: '#ef4444',
-          paused: '#f59e0b',
-          unknown: '#6b7280',
+          up: '#77ffaa',
+          down: '#ff7777',
+          paused: '#ffcc77',
+          unknown: '#a0a0a0',
         }
       },
       animation: {
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'heartbeat': 'heartbeat 1.5s ease-in-out infinite',
-        'fade-in': 'fade-in 0.5s ease-out',
-        'slide-up': 'slide-up 0.3s ease-out',
-        'slide-down': 'slide-down 0.3s ease-out',
-        'bounce-in': 'bounce-in 0.6s ease-out',
       },
       keyframes: {
         heartbeat: {
           '0%, 100%': { transform: 'scale(1)' },
           '50%': { transform: 'scale(1.1)' },
-        },
-        'fade-in': {
-          '0%': { opacity: '0' },
-          '100%': { opacity: '1' },
-        },
-        'slide-up': {
-          '0%': { transform: 'translateY(10px)', opacity: '0' },
-          '100%': { transform: 'translateY(0)', opacity: '1' },
-        },
-        'slide-down': {
-          '0%': { transform: 'translateY(-10px)', opacity: '0' },
-          '100%': { transform: 'translateY(0)', opacity: '1' },
-        },
-        'bounce-in': {
-          '0%': { transform: 'scale(0.3)', opacity: '0' },
-          '50%': { transform: 'scale(1.05)' },
-          '70%': { transform: 'scale(0.9)' },
-          '100%': { transform: 'scale(1)', opacity: '1' },
         }
       },
       backdropBlur: {
