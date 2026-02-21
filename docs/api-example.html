@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API 使用示例</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+    .config {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .config label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+      color: #555;
+    }
+    .config input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      margin-bottom: 15px;
+      font-size: 14px;
+    }
+    .config button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .config button:hover {
+      background: #0056b3;
+    }
+    .config button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .status {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .status.loading {
+      text-align: center;
+      color: #666;
+    }
+    .status.error {
+      color: #dc3545;
+    }
+    .monitor {
+      padding: 15px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .monitor:last-child {
+      border-bottom: none;
+    }
+    .monitor-info {
+      flex: 1;
+    }
+    .monitor-name {
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 5px;
+    }
+    .monitor-url {
+      color: #666;
+      font-size: 12px;
+    }
+    .monitor-status {
+      text-align: right;
+      min-width: 100px;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .status-ok {
+      background: #d4edda;
+      color: #155724;
+    }
+    .status-down {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    .status-paused {
+      background: #fff3cd;
+      color: #856404;
+    }
+    .status-unknown {
+      background: #e2e3e5;
+      color: #383d41;
+    }
+    .uptime {
+      font-size: 12px;
+      color: #666;
+      margin-top: 5px;
+    }
+    .last-updated {
+      text-align: right;
+      color: #999;
+      font-size: 12px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📊 服务状态监控 API 示例</h1>
+    
+    <div class="config">
+      <label for="apiUrl">API 地址</label>
+      <input type="text" id="apiUrl" placeholder="https://your-api.workers.dev/api/monitors" value="">
+      
+      <label for="apiKey">API 密钥（可选）</label>
+      <input type="text" id="apiKey" placeholder="your-api-key" value="">
+      
+      <label for="days">获取天数</label>
+      <input type="number" id="days" placeholder="30" value="30" min="7" max="90">
+      
+      <button id="loadBtn" onclick="loadStatus()">加载状态</button>
+    </div>
+    
+    <div class="status" id="statusContainer">
+      <p style="text-align: center; color: #999;">点击"加载状态"按钮获取数据</p>
+    </div>
+  </div>
+
+  <script>
+    const statusContainer = document.getElementById('statusContainer');
+    const loadBtn = document.getElementById('loadBtn');
+    
+    // 从 URL 参数加载配置
+    window.onload = function() {
+      const params = new URLSearchParams(window.location.search);
+      const apiUrl = params.get('apiUrl');
+      const apiKey = params.get('apiKey');
+      const days = params.get('days');
+      
+      if (apiUrl) document.getElementById('apiUrl').value = apiUrl;
+      if (apiKey) document.getElementById('apiKey').value = apiKey;
+      if (days) document.getElementById('days').value = days;
+      
+      // 自动加载
+      if (apiUrl) {
+        loadStatus();
+      }
+    };
+    
+    async function loadStatus() {
+      const apiUrl = document.getElementById('apiUrl').value.trim();
+      const apiKey = document.getElementById('apiKey').value.trim();
+      const days = parseInt(document.getElementById('days').value) || 30;
+      
+      if (!apiUrl) {
+        showError('请输入 API 地址');
+        return;
+      }
+      
+      loadBtn.disabled = true;
+      statusContainer.innerHTML = '<p class="loading">加载中...</p>';
+      
+      try {
+        const headers = {};
+        if (apiKey) {
+          headers['X-API-Key'] = apiKey;
+        }
+        
+        const url = new URL(apiUrl);
+        if (!url.searchParams.has('days')) {
+          url.searchParams.append('days', days);
+        }
+        
+        const response = await fetch(url.toString(), { headers });
+        const data = await response.json();
+        
+        if (data.success) {
+          renderMonitors(data.data, data.timestamp);
+        } else {
+          showError(data.error || '获取数据失败');
+        }
+      } catch (error) {
+        showError('请求失败: ' + error.message);
+      } finally {
+        loadBtn.disabled = false;
+      }
+    }
+    
+    function showError(message) {
+      statusContainer.innerHTML = `<p class="error">❌ ${message}</p>`;
+    }
+    
+    function renderMonitors(monitors, timestamp) {
+      if (!monitors || monitors.length === 0) {
+        statusContainer.innerHTML = '<p style="text-align: center; color: #999;">暂无监控数据</p>';
+        return;
+      }
+      
+      const statusMap = {
+        'ok': { text: '正常', class: 'status-ok' },
+        'down': { text: '异常', class: 'status-down' },
+        'paused': { text: '暂停', class: 'status-paused' },
+        'unknown': { text: '未知', class: 'status-unknown' }
+      };
+      
+      const html = monitors.map(monitor => {
+        const status = statusMap[monitor.status] || statusMap['unknown'];
+        return `
+          <div class="monitor">
+            <div class="monitor-info">
+              <div class="monitor-name">${escapeHtml(monitor.name)}</div>
+              <div class="monitor-url">${escapeHtml(monitor.url)}</div>
+            </div>
+            <div class="monitor-status">
+              <span class="status-badge ${status.class}">${status.text}</span>
+              <div class="uptime">可用率: ${monitor.average.toFixed(2)}%</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+      
+      const lastUpdated = new Date(timestamp).toLocaleString('zh-CN');
+      
+      statusContainer.innerHTML = `
+        ${html}
+        <div class="last-updated">最后更新: ${lastUpdated}</div>
+      `;
+    }
+    
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    // 自动刷新（每 5 分钟）
+    setInterval(() => {
+      const apiUrl = document.getElementById('apiUrl').value.trim();
+      if (apiUrl) {
+        loadStatus();
+      }
+    }, 300000);
+  </script>
+</body>
+</html>

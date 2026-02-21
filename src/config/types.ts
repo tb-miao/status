@@ -15,6 +15,13 @@ export interface AppConfig {
   enableHCaptcha: boolean;
   hCaptchaSiteKey?: string;
   hCaptchaSecret?: string;
+  // 公共 API 配置
+  enablePublicApi: boolean;
+  publicApiUrl?: string;
+  publicApiKey?: string;
+  publicApiAllowedOrigins?: string;
+  publicApiRateLimit?: number;
+  publicApiCacheTime?: number;
   // 缓存配置（单位：秒）
   refetchInterval: number;    // 自动刷新间隔
   staleTime: number;          // 数据新鲜时间

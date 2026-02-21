@@ -30,6 +30,7 @@ npm run preview
 - 🔄 **智能刷新** - 显示最后更新时间、loading 状态、自动重试
 - 🔐 **密码保护** - 支持通过环境变量配置访问密码，提供退出登录功能
 - 🛡️ **人机验证** - 支持 hCaptcha 人机验证，增强安全性
+- 🔌 **公共 API** - 提供公开 API，允许其他网站获取监控数据
 
 ## 密码保护
 
@@ -88,5 +89,119 @@ VITE_HCAPTCHA_SECRET=your-hcaptcha-secret
 - 验证通过后才能点击"验证并进入"按钮
 - 如果验证失败或过期，需要重新完成验证
 - 支持暗色主题，会自动适配当前页面主题
+
+
+
+## 公共 API
+
+本项目提供公开 API，允许其他网站获取监控状态数据。
+
+### 快速开始
+
+1. **部署 API 服务器**
+
+   将 [worker/public-api.js](./worker/public-api.js) 部署到 Cloudflare Workers 或其他平台。
+
+2. **配置环境变量**
+
+   在 API 服务器中配置以下环境变量：
+
+   ```bash
+   # UptimeRobot API Key
+   UPTIMEROBOT_API_KEY=your-uptimerobot-api-key
+   
+   # 允许的 API 密钥（多个用逗号分隔）
+   ALLOWED_API_KEYS=key1,key2,key3
+   
+   # 是否需要 API 密钥验证
+   REQUIRE_API_KEY=true
+   
+   # 允许的 CORS 源（* 表示允许所有）
+   ALLOWED_ORIGINS=*
+   
+   # 速率限制（每分钟请求数）
+   RATE_LIMIT=60
+   
+   # 缓存时间（秒）
+   CACHE_TIME=300
+   ```
+
+3. **在项目中启用公共 API**
+
+   在 `.env` 文件中配置：
+
+   ```bash
+   # 启用公共 API
+   VITE_ENABLE_PUBLIC_API=true
+   
+   # 公共 API 地址
+   VITE_PUBLIC_API_URL=https://your-worker.workers.dev
+   
+   # API 密钥
+   VITE_PUBLIC_API_KEY=your-api-key
+   ```
+
+### API 端点
+
+**获取监控数据：** `GET /api/monitors`
+
+**请求参数：**
+- `days`: 获取天数（7, 30, 60, 90），默认 30
+
+**请求头：**
+- `X-API-Key`: API 密钥（如果启用）
+
+**响应示例：**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 123456789,
+      "name": "我的网站",
+      "url": "https://example.com",
+      "status": "ok",
+      "average": 99.95,
+      "daily": [
+        {
+          "date": "2024-01-15",
+          "uptime": 100,
+          "down": {
+            "times": 0,
+            "duration": 0
+          }
+        }
+      ],
+      "total": {
+        "times": 0,
+        "duration": 0
+      },
+      "avgResponseTime": 245.5
+    }
+  ],
+  "timestamp": 1705334400000
+}
+```
+
+### 使用示例
+
+**JavaScript:**
+
+```javascript
+const response = await fetch('https://your-api.workers.dev/api/monitors?days=30', {
+  headers: {
+    'X-API-Key': 'your-api-key',
+  },
+});
+const data = await response.json();
+console.log(data.data);
+```
+
+**查看完整文档：** [docs/API.md](./docs/API.md)
+
+**在线示例：** [docs/api-example.html](./docs/api-example.html)
+
+
 
 ![https://avatars.githubusercontent.com/u/172878250?v=4](https://avatars.githubusercontent.com/u/172878250?v=4)

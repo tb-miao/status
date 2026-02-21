@@ -46,6 +46,30 @@ function getHCaptchaSecret(): string {
   return import.meta.env.VITE_HCAPTCHA_SECRET || '';
 }
 
+function getPublicApiEnabled(): boolean {
+  return import.meta.env.VITE_ENABLE_PUBLIC_API === 'true';
+}
+
+function getPublicApiUrl(): string {
+  return import.meta.env.VITE_PUBLIC_API_URL || '';
+}
+
+function getPublicApiKey(): string {
+  return import.meta.env.VITE_PUBLIC_API_KEY || '';
+}
+
+function getPublicApiAllowedOrigins(): string {
+  return import.meta.env.VITE_PUBLIC_API_ALLOWED_ORIGINS || '*';
+}
+
+function getPublicApiRateLimit(): number {
+  return parseInt(import.meta.env.VITE_PUBLIC_API_RATE_LIMIT || '60', 10);
+}
+
+function getPublicApiCacheTime(): number {
+  return parseInt(import.meta.env.VITE_PUBLIC_API_CACHE_TIME || '300', 10);
+}
+
 /**
  * 应用配置文件
  * EdgeOne Pages 部署时通过环境变量配置
@@ -104,6 +128,26 @@ const config: AppConfig = {
 
   // hCaptcha 密钥（服务端验证用）
   hCaptchaSecret: getHCaptchaSecret(),
+
+  // ===== 公共 API 配置 =====
+
+  // 是否启用公共 API
+  enablePublicApi: getPublicApiEnabled(),
+
+  // 公共 API 地址
+  publicApiUrl: getPublicApiUrl(),
+
+  // API 密钥
+  publicApiKey: getPublicApiKey(),
+
+  // 允许的 CORS 源
+  publicApiAllowedOrigins: getPublicApiAllowedOrigins(),
+
+  // 速率限制
+  publicApiRateLimit: getPublicApiRateLimit(),
+
+  // 缓存时间
+  publicApiCacheTime: getPublicApiCacheTime(),
 
   // ===== 缓存配置（单位：秒）=====
 
