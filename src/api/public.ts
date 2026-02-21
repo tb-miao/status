@@ -3,7 +3,6 @@ import dayjs from 'dayjs';
 import { getConfig } from '../config';
 import type {
   UptimeApiResponse,
-  ProcessedMonitor,
   DailyData,
   MonitorStatus,
 } from '../types';
