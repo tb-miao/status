@@ -10,39 +10,41 @@
 
 const UPTIMEROBOT_API = 'https://api.uptimerobot.com/v2/getMonitors';
 
-// API 配置（通过环境变量设置）
-const CONFIG = {
-  // UptimeRobot API Key
-  API_KEY: typeof UPTIMEROBOT_API_KEY !== 'undefined' ? UPTIMEROBOT_API_KEY : '',
-  
-  // 允许的 API 密钥（多个用逗号分隔）
-  API_KEYS: typeof ALLOWED_API_KEYS !== 'undefined' ? ALLOWED_API_KEYS.split(',') : [],
-  
-  // 是否启用 API 密钥验证
-  REQUIRE_API_KEY: typeof REQUIRE_API_KEY !== 'undefined' ? REQUIRE_API_KEY === 'true' : false,
-  
-  // 允许的 CORS 源（* 表示允许所有）
-  ALLOWED_ORIGINS: typeof ALLOWED_ORIGINS !== 'undefined' ? ALLOWED_ORIGINS.split(',') : ['*'],
-  
-  // 速率限制（每分钟请求数）
-  RATE_LIMIT: typeof RATE_LIMIT !== 'undefined' ? parseInt(RATE_LIMIT) : 60,
-  
-  // 缓存时间（秒）
-  CACHE_TIME: typeof CACHE_TIME !== 'undefined' ? parseInt(CACHE_TIME) : 300,
-};
-
-// 内存缓存
+// 内存缓存（全局）
 let cache = {
   data: null,
   timestamp: 0,
 };
 
-// 速率限制存储
+// 速率限制存储（全局）
 const rateLimits = new Map();
 
+// 从 env 获取配置
+function getConfig(env) {
+  return {
+    // UptimeRobot API Key
+    API_KEY: env?.UPTIMEROBOT_API_KEY || '',
+    
+    // 允许的 API 密钥（多个用逗号分隔）
+    API_KEYS: env?.ALLOWED_API_KEYS ? env.ALLOWED_API_KEYS.split(',').filter(k => k.trim()) : [],
+    
+    // 是否启用 API 密钥验证
+    REQUIRE_API_KEY: env?.REQUIRE_API_KEY === 'true' || false,
+    
+    // 允许的 CORS 源（* 表示允许所有）
+    ALLOWED_ORIGINS: env?.ALLOWED_ORIGINS ? env.ALLOWED_ORIGINS.split(',').filter(o => o.trim()) : ['*'],
+    
+    // 速率限制（每分钟请求数）
+    RATE_LIMIT: env?.RATE_LIMIT && !isNaN(parseInt(env.RATE_LIMIT)) ? parseInt(env.RATE_LIMIT) : 60,
+    
+    // 缓存时间（秒）
+    CACHE_TIME: env?.CACHE_TIME && !isNaN(parseInt(env.CACHE_TIME)) ? parseInt(env.CACHE_TIME) : 300,
+  };
+}
+
 // CORS 响应头
-function getCorsHeaders(origin) {
-  const allowedOrigins = CONFIG.ALLOWED_ORIGINS;
+function getCorsHeaders(origin, config) {
+  const allowedOrigins = config.ALLOWED_ORIGINS;
   let allowOrigin = '*';
   
   if (!allowedOrigins.includes('*')) {
@@ -62,14 +64,14 @@ function getCorsHeaders(origin) {
 }
 
 // 检查速率限制
-function checkRateLimit(ip) {
+function checkRateLimit(ip, config) {
   const now = Date.now();
   const minute = Math.floor(now / 60000);
   const key = `${ip}:${minute}`;
   
   const count = rateLimits.get(key) || 0;
   
-  if (count >= CONFIG.RATE_LIMIT) {
+  if (count >= config.RATE_LIMIT) {
     return false;
   }
   
@@ -87,8 +89,8 @@ function checkRateLimit(ip) {
 }
 
 // 验证 API 密钥
-function validateApiKey(apiKey) {
-  if (!CONFIG.REQUIRE_API_KEY) {
+function validateApiKey(apiKey, config) {
+  if (!config.REQUIRE_API_KEY) {
     return true;
   }
   
@@ -96,7 +98,7 @@ function validateApiKey(apiKey) {
     return false;
   }
   
-  return CONFIG.API_KEYS.includes(apiKey);
+  return config.API_KEYS.includes(apiKey);
 }
 
 // 获取客户端 IP
@@ -111,11 +113,16 @@ function getClientIp(request) {
 }
 
 // 获取监控数据
-async function fetchMonitors(days = 30) {
+async function fetchMonitors(days = 30, config) {
   const now = Date.now();
   
+  // 检查 UptimeRobot API Key 是否配置
+  if (!config.API_KEY) {
+    throw new Error('UptimeRobot API Key 未配置，请在环境变量中设置 UPTIMEROBOT_API_KEY');
+  }
+  
   // 检查缓存
-  if (cache.data && (now - cache.timestamp) < CONFIG.CACHE_TIME * 1000) {
+  if (cache.data && (now - cache.timestamp) < config.CACHE_TIME * 1000) {
     return cache.data;
   }
   
@@ -134,7 +141,7 @@ async function fetchMonitors(days = 30) {
   ranges.push(`${start}_${end}`);
   
   const postdata = {
-    api_key: CONFIG.API_KEY,
+    api_key: config.API_KEY,
     format: 'json',
     logs: 1,
     log_types: '1-2',
@@ -234,10 +241,10 @@ async function fetchMonitors(days = 30) {
 }
 
 // 处理 API 请求
-async function handleApiRequest(request) {
+async function handleApiRequest(request, config) {
   const url = new URL(request.url);
   const origin = request.headers.get('Origin');
-  const corsHeaders = getCorsHeaders(origin);
+  const corsHeaders = getCorsHeaders(origin, config);
   
   if (!corsHeaders) {
     return new Response(
@@ -248,7 +255,7 @@ async function handleApiRequest(request) {
   
   // 检查速率限制
   const ip = getClientIp(request);
-  if (!checkRateLimit(ip)) {
+  if (!checkRateLimit(ip, config)) {
     return new Response(
       JSON.stringify({ success: false, error: '请求过于频繁，请稍后再试' }),
       { 
@@ -260,9 +267,21 @@ async function handleApiRequest(request) {
   
   // 验证 API 密钥
   const apiKey = request.headers.get('X-API-Key');
-  if (!validateApiKey(apiKey)) {
+  if (!validateApiKey(apiKey, config)) {
+    let errorMsg = '无效的 API 密钥';
+    
+    if (!apiKey) {
+      if (config.REQUIRE_API_KEY) {
+        errorMsg = '缺少 API 密钥，请在请求头中添加 X-API-Key';
+      } else {
+        errorMsg = 'API 密钥验证已禁用，但仍需提供密钥';
+      }
+    } else if (config.API_KEYS.length === 0) {
+      errorMsg = '服务器未配置允许的 API 密钥，请联系管理员';
+    }
+    
     return new Response(
-      JSON.stringify({ success: false, error: '无效的 API 密钥' }),
+      JSON.stringify({ success: false, error: errorMsg }),
       { 
         status: 401, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -276,14 +295,14 @@ async function handleApiRequest(request) {
   const queryDays = validDays.includes(days) ? days : 30;
   
   try {
-    const data = await fetchMonitors(queryDays);
+    const data = await fetchMonitors(queryDays, config);
     
     return new Response(JSON.stringify(data), {
       status: 200,
       headers: {
         ...corsHeaders,
         'Content-Type': 'application/json',
-        'Cache-Control': `public, max-age=${CONFIG.CACHE_TIME}`,
+        'Cache-Control': `public, max-age=${config.CACHE_TIME}`,
       },
     });
   } catch (error) {
@@ -302,9 +321,9 @@ async function handleApiRequest(request) {
 }
 
 // 处理 OPTIONS 请求
-function handleOptions(request) {
+function handleOptions(request, config) {
   const origin = request.headers.get('Origin');
-  const corsHeaders = getCorsHeaders(origin);
+  const corsHeaders = getCorsHeaders(origin, config);
   
   if (!corsHeaders) {
     return new Response(null, { status: 403 });
@@ -317,9 +336,9 @@ function handleOptions(request) {
 }
 
 // 处理根路径请求（返回 API 文档）
-function handleRoot(request) {
+function handleRoot(request, config) {
   const origin = request.headers.get('Origin');
-  const corsHeaders = getCorsHeaders(origin);
+  const corsHeaders = getCorsHeaders(origin, config);
   
   const docs = {
     name: 'Uptime Status Public API',
@@ -339,7 +358,7 @@ function handleRoot(request) {
         headers: {
           'X-API-Key': {
             description: 'API 密钥（如果启用）',
-            required: CONFIG.REQUIRE_API_KEY,
+            required: config.REQUIRE_API_KEY,
           },
         },
         response: {
@@ -359,11 +378,11 @@ function handleRoot(request) {
       total: '{ times, duration }',
       avgResponseTime: 'number | undefined',
     },
-    authentication: CONFIG.REQUIRE_API_KEY 
+    authentication: config.REQUIRE_API_KEY 
       ? '需要 API 密钥，请在请求头中添加 X-API-Key'
       : '无需认证',
-    rateLimit: `每分钟 ${CONFIG.RATE_LIMIT} 次请求`,
-    cache: `缓存时间 ${CONFIG.CACHE_TIME} 秒`,
+    rateLimit: `每分钟 ${config.RATE_LIMIT} 次请求`,
+    cache: `缓存时间 ${config.CACHE_TIME} 秒`,
   };
   
   return new Response(JSON.stringify(docs, null, 2), {
@@ -377,24 +396,25 @@ function handleRoot(request) {
 
 // 主处理函数
 export default {
-  async fetch(request) {
+  async fetch(request, env, ctx) {
+    const config = getConfig(env);
     const url = new URL(request.url);
     
     // 处理 OPTIONS 预检请求
     if (request.method === 'OPTIONS') {
-      return handleOptions(request);
+      return handleOptions(request, config);
     }
     
     // 处理根路径
     if (url.pathname === '/' || url.pathname === '') {
-      return handleRoot(request);
+      return handleRoot(request, config);
     }
     
     // 处理 API 端点
     if (url.pathname === '/api/monitors') {
       if (request.method !== 'GET') {
         const origin = request.headers.get('Origin');
-        const corsHeaders = getCorsHeaders(origin);
+        const corsHeaders = getCorsHeaders(origin, config);
         return new Response(
           JSON.stringify({ success: false, error: '方法不允许' }),
           { 
@@ -403,12 +423,12 @@ export default {
           }
         );
       }
-      return handleApiRequest(request);
+      return handleApiRequest(request, config);
     }
     
     // 404
     const origin = request.headers.get('Origin');
-    const corsHeaders = getCorsHeaders(origin);
+    const corsHeaders = getCorsHeaders(origin, config);
     return new Response(
       JSON.stringify({ success: false, error: '未找到端点' }),
       { 

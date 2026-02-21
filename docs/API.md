@@ -9,18 +9,43 @@
 1. 登录 [Cloudflare Dashboard](https://dash.cloudflare.com/)
 2. 进入 **Workers & Pages** → **Create Worker**
 3. 将 `worker/public-api.js` 文件内容粘贴进去
-4. 在 **Settings** → **Variables** 中配置环境变量：
+4. 点击 **Deploy** 部署 Worker
+5. 部署后，进入 Worker 的 **Settings** → **Variables**
+6. 点击 **Add variable** 添加以下环境变量：
 
-| 变量名 | 说明 | 示例值 |
-|--------|------|--------|
-| `UPTIMEROBOT_API_KEY` | UptimeRobot API Key | `ur3205001-05db75e224a0309f16fd982c` |
-| `ALLOWED_API_KEYS` | 允许的 API 密钥（逗号分隔） | `key1,key2,key3` |
-| `REQUIRE_API_KEY` | 是否需要 API 密钥验证 | `true` 或 `false` |
-| `ALLOWED_ORIGINS` | 允许的 CORS 源（逗号分隔） | `*,https://example.com` |
-| `RATE_LIMIT` | 每分钟请求限制 | `60` |
-| `CACHE_TIME` | 缓存时间（秒） | `300` |
+| 变量名 | 说明 | 示例值 | 必填 |
+|--------|------|--------|------|
+| `UPTIMEROBOT_API_KEY` | UptimeRobot API Key | `ur3205001-05db75e224a0309f16fd982c` | ✅ 是 |
+| `ALLOWED_API_KEYS` | 允许的 API 密钥（逗号分隔） | `key1,key2,key3` | ✅ 是 |
+| `REQUIRE_API_KEY` | 是否需要 API 密钥验证 | `true` 或 `false` | 否（默认 true） |
+| `ALLOWED_ORIGINS` | 允许的 CORS 源（逗号分隔） | `*,https://example.com` | 否（默认 *） |
+| `RATE_LIMIT` | 每分钟请求限制 | `60` | 否（默认 60） |
+| `CACHE_TIME` | 缓存时间（秒） | `300` | 否（默认 300） |
 
-5. 部署后获得 Worker URL，例如：`https://your-worker.workers.dev`
+**重要提示：**
+- `UPTIMEROBOT_API_KEY` 是必填项，从 [UptimeRobot Dashboard](https://uptimerobot.com/dashboard#mySettings) 获取
+- `ALLOWED_API_KEYS` 是必填项，用于验证客户端请求
+- 如果 `REQUIRE_API_KEY` 设置为 `false`，则不需要 API 密钥验证（不推荐用于生产环境）
+- 添加环境变量后，需要重新部署 Worker 才能生效
+
+**获取 UptimeRobot API Key：**
+1. 访问 [UptimeRobot Dashboard](https://uptimerobot.com/dashboard#mySettings)
+2. 向下滚动到 **API Details** 部分
+3. 点击 **Show API Key** 复制您的 API Key
+
+**生成安全的 API 密钥：**
+```bash
+# 使用 OpenSSL
+openssl rand -hex 32
+
+# 或使用 Node.js
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+
+# 或使用在线工具
+# https://www.uuidgenerator.net/guid
+```
+
+7. 部署后获得 Worker URL，例如：`https://your-worker.workers.dev`
 
 ### 方式二：Vercel Serverless Function
 
@@ -484,6 +509,53 @@ API 可能返回以下错误：
 1. 减少请求频率
 2. 增加缓存时间
 4. 考虑使用客户端缓存
+
+### 500 错误 - UptimeRobot API Key 未配置
+
+如果收到以下错误：
+```json
+{
+  "success": false,
+  "error": "UptimeRobot API Key 未配置，请在环境变量中设置 UPTIMEROBOT_API_KEY"
+}
+```
+
+**解决方法：**
+
+1. **检查 Cloudflare Workers 环境变量配置**
+   - 登录 Cloudflare Dashboard
+   - 进入 Workers & Pages
+   - 选择您的 Worker
+   - 点击 **Settings** → **Variables**
+   - 确认 `UPTIMEROBOT_API_KEY` 变量已添加
+
+2. **重新部署 Worker**
+   - 添加或修改环境变量后，必须重新部署
+   - 点击 **Deploy** 按钮
+   - 等待部署完成
+
+3. **验证 API Key**
+   - 确保从 UptimeRobot Dashboard 复制的 API Key 是正确的
+   - API Key 应该以 `ur` 开头
+   - 不要包含空格或换行符
+
+4. **检查变量名拼写**
+   - 确保变量名完全匹配：`UPTIMEROBOT_API_KEY`（全大写）
+   - 注意是 `UPTIMEROBOT` 而不是 `UPTIME_ROBOT`
+
+5. **查看 Worker 日志**
+   - 在 Cloudflare Dashboard 中查看 Worker 日志
+   - 进入 Workers & Pages → 选择 Worker → Logs
+   - 查看是否有其他错误信息
+
+**测试环境变量是否正确配置：**
+
+访问您的 Worker 根路径（不带 `/api/monitors`）：
+```
+https://your-worker.workers.dev/
+```
+
+应该返回 API 文档，其中包含配置信息。如果 `authentication` 字段显示为空，说明环境变量未正确配置。
 
 ## 联系支持
 

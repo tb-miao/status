@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API 配置测试</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+    .test-section {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .test-section h2 {
+      margin-bottom: 15px;
+      color: #333;
+      font-size: 18px;
+    }
+    .test-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      border-bottom: 1px solid #eee;
+    }
+    .test-item:last-child {
+      border-bottom: none;
+    }
+    .test-label {
+      font-weight: 500;
+      color: #555;
+    }
+    .test-status {
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .status-success {
+      background: #d4edda;
+      color: #155724;
+    }
+    .status-error {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    .status-warning {
+      background: #fff3cd;
+      color: #856404;
+    }
+    .status-pending {
+      background: #e2e3e5;
+      color: #383d41;
+    }
+    .config-details {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 4px;
+      margin-top: 15px;
+      font-family: monospace;
+      font-size: 13px;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .error-box {
+      background: #f8d7da;
+      border: 1px solid #f5c6cb;
+      color: #721c24;
+      padding: 15px;
+      border-radius: 4px;
+      margin-top: 15px;
+    }
+    .error-box h3 {
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+    .error-box ul {
+      margin-left: 20px;
+    }
+    .error-box li {
+      margin-bottom: 5px;
+    }
+    .button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-right: 10px;
+    }
+    .button:hover {
+      background: #0056b3;
+    }
+    .button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔧 API 配置测试工具</h1>
+    
+    <div class="test-section">
+      <h2>测试配置</h2>
+      <div style="margin-bottom: 15px;">
+        <label style="display: block; margin-bottom: 5px; font-weight: bold;">Worker URL</label>
+        <input type="text" id="workerUrl" placeholder="https://your-worker.workers.dev" 
+               style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+      </div>
+      <button class="button" onclick="runTests()">🧪 运行测试</button>
+      <button class="button" onclick="clearResults()">🗑️ 清除结果</button>
+    </div>
+    
+    <div class="test-section" id="results" style="display: none;">
+      <h2>测试结果</h2>
+      <div id="testResults"></div>
+      <div id="configDetails" style="display: none;"></div>
+      <div id="errorDetails" style="display: none;"></div>
+    </div>
+  </div>
+
+  <script>
+    async function runTests() {
+      const workerUrl = document.getElementById('workerUrl').value.trim();
+      
+      if (!workerUrl) {
+        alert('请输入 Worker URL');
+        return;
+      }
+      
+      const results = document.getElementById('results');
+      const testResults = document.getElementById('testResults');
+      const configDetails = document.getElementById('configDetails');
+      const errorDetails = document.getElementById('errorDetails');
+      
+      results.style.display = 'block';
+      configDetails.style.display = 'none';
+      errorDetails.style.display = 'none';
+      
+      testResults.innerHTML = '<div class="test-item"><span class="test-label">正在测试...</span><span class="test-status status-pending">⏳</span></div>';
+      
+      const tests = [
+        {
+          name: '1. 检查 Worker 是否可访问',
+          test: () => testWorkerAccess(workerUrl)
+        },
+        {
+          name: '2. 获取 API 配置信息',
+          test: () => testApiConfig(workerUrl)
+        },
+        {
+          name: '3. 测试 API 端点',
+          test: () => testApiEndpoint(workerUrl)
+        },
+        {
+          name: '4. 检查 CORS 配置',
+          test: () => testCors(workerUrl)
+        }
+      ];
+      
+      let html = '';
+      let configData = null;
+      let errors = [];
+      
+      for (const test of tests) {
+        try {
+          const result = await test.test();
+          html += `<div class="test-item">
+            <span class="test-label">${test.name}</span>
+            <span class="test-status ${result.success ? 'status-success' : 'status-error'}">
+              ${result.success ? '✓ 通过' : '✗ 失败'}
+            </span>
+          </div>`;
+          
+          if (result.config) {
+            configData = result.config;
+          }
+          
+          if (result.error) {
+            errors.push(result.error);
+          }
+        } catch (error) {
+          html += `<div class="test-item">
+            <span class="test-label">${test.name}</span>
+            <span class="test-status status-error">✗ 错误</span>
+          </div>`;
+          errors.push(`${test.name}: ${error.message}`);
+        }
+      }
+      
+      testResults.innerHTML = html;
+      
+      // 显示配置详情
+      if (configData) {
+        configDetails.style.display = 'block';
+        configDetails.innerHTML = `
+          <h2>API 配置信息</h2>
+          <div class="config-details">${JSON.stringify(configData, null, 2)}</div>
+        `;
+      }
+      
+      // 显示错误信息
+      if (errors.length > 0) {
+        errorDetails.style.display = 'block';
+        errorDetails.innerHTML = `
+          <div class="error-box">
+            <h3>⚠️ 发现问题</h3>
+            <ul>
+              ${errors.map(e => `<li>${escapeHtml(e)}</li>`).join('')}
+            </ul>
+          </div>
+        `;
+      }
+    }
+    
+    async function testWorkerAccess(url) {
+      try {
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          },
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        return { success: true };
+      } catch (error) {
+        return { 
+          success: false, 
+          error: `无法访问 Worker: ${error.message}` 
+        };
+      }
+    }
+    
+    async function testApiConfig(url) {
+      try {
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          },
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        // 检查配置
+        const issues = [];
+        
+        if (!data.authentication || data.authentication === '无需认证') {
+          issues.push('⚠️ API 密钥验证未启用，建议在生产环境中启用');
+        }
+        
+        if (!data.rateLimit) {
+          issues.push('⚠️ 未配置速率限制');
+        }
+        
+        if (!data.cache) {
+          issues.push('⚠️ 未配置缓存时间');
+        }
+        
+        return { 
+          success: true, 
+          config: data,
+          error: issues.length > 0 ? issues.join('\n') : null
+        };
+      } catch (error) {
+        return { 
+          success: false, 
+          error: `无法获取 API 配置: ${error.message}` 
+        };
+      }
+    }
+    
+    async function testApiEndpoint(url) {
+      try {
+        const apiUrl = url.endsWith('/') ? url + 'api/monitors' : url + '/api/monitors';
+        
+        const response = await fetch(apiUrl, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          },
+        });
+        
+        const data = await response.json();
+        
+        if (response.status === 500 && data.error && data.error.includes('UptimeRobot API Key 未配置')) {
+          return { 
+            success: false, 
+            error: 'UptimeRobot API Key 未配置。请在 Cloudflare Workers 环境变量中添加 UPTIMEROBOT_API_KEY，然后重新部署 Worker。' 
+          };
+        }
+        
+        if (response.status === 401) {
+          return { 
+            success: false, 
+            error: 'API 密钥验证失败。请检查 ALLOWED_API_KEYS 环境变量配置。' 
+          };
+        }
+        
+        if (response.status === 403) {
+          return { 
+            success: false, 
+            error: 'CORS 源不允许。请检查 ALLOWED_ORIGINS 环境变量配置。' 
+          };
+        }
+        
+        return { success: true };
+      } catch (error) {
+        return { 
+          success: false, 
+          error: `API 端点测试失败: ${error.message}` 
+        };
+      }
+    }
+    
+    async function testCors(url) {
+      try {
+        const response = await fetch(url, {
+          method: 'OPTIONS',
+          headers: {
+            'Access-Control-Request-Method': 'GET',
+            'Access-Control-Request-Headers': 'X-API-Key',
+          },
+        });
+        
+        const corsHeaders = response.headers.get('Access-Control-Allow-Origin');
+        
+        if (!corsHeaders) {
+          return { 
+            success: false, 
+            error: 'CORS 头未配置' 
+          };
+        }
+        
+        return { success: true };
+      } catch (error) {
+        return { 
+          success: false, 
+          error: `CORS 测试失败: ${error.message}` 
+        };
+      }
+    }
+    
+    function clearResults() {
+      document.getElementById('results').style.display = 'none';
+      document.getElementById('testResults').innerHTML = '';
+      document.getElementById('configDetails').style.display = 'none';
+      document.getElementById('errorDetails').style.display = 'none';
+    }
+    
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    // 从 URL 参数加载配置
+    window.onload = function() {
+      const params = new URLSearchParams(window.location.search);
+      const workerUrl = params.get('url');
+      if (workerUrl) {
+        document.getElementById('workerUrl').value = workerUrl;
+      }
+    };
+  </script>
+</body>
+</html>

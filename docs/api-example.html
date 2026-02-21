@@ -133,33 +133,102 @@
       font-size: 12px;
       margin-top: 10px;
     }
+    .error-details {
+      background: #f8d7da;
+      border: 1px solid #f5c6cb;
+      color: #721c24;
+      padding: 15px;
+      border-radius: 4px;
+      margin-top: 15px;
+      font-size: 14px;
+    }
+    .error-details pre {
+      background: #fff;
+      padding: 10px;
+      border-radius: 4px;
+      margin-top: 10px;
+      overflow-x: auto;
+      font-size: 12px;
+    }
+    .info-box {
+      background: #d1ecf1;
+      border: 1px solid #bee5eb;
+      color: #0c5460;
+      padding: 15px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+    .info-box code {
+      background: rgba(255,255,255,0.5);
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: monospace;
+    }
+    .status-summary {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+    .summary-item {
+      flex: 1;
+      min-width: 120px;
+      text-align: center;
+      padding: 10px;
+      background: #f8f9fa;
+      border-radius: 4px;
+    }
+    .summary-item .label {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 5px;
+    }
+    .summary-item .value {
+      font-size: 20px;
+      font-weight: bold;
+      color: #333;
+    }
+    .summary-item.ok .value { color: #28a745; }
+    .summary-item.down .value { color: #dc3545; }
+    .summary-item.paused .value { color: #ffc107; }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>📊 服务状态监控 API 示例</h1>
     
+    <div class="info-box">
+      <strong>💡 使用提示：</strong>
+      <ul style="margin: 10px 0 0 20px;">
+        <li>输入您的 API 地址和密钥（如果需要）</li>
+        <li>点击"加载状态"按钮获取数据</li>
+        <li>也可以通过 URL 参数传递：<code>?apiUrl=xxx&apiKey=xxx&days=30</code></li>
+      </ul>
+    </div>
+    
     <div class="config">
-      <label for="apiUrl">API 地址</label>
+      <label for="apiUrl">API 地址 <span style="color: #dc3545;">*</span></label>
       <input type="text" id="apiUrl" placeholder="https://your-api.workers.dev/api/monitors" value="">
       
-      <label for="apiKey">API 密钥（可选）</label>
-      <input type="text" id="apiKey" placeholder="your-api-key" value="">
+      <label for="apiKey">API 密钥 <span style="color: #666; font-weight: normal;">（如果需要）</span></label>
+      <input type="password" id="apiKey" placeholder="your-api-key" value="">
       
       <label for="days">获取天数</label>
       <input type="number" id="days" placeholder="30" value="30" min="7" max="90">
       
-      <button id="loadBtn" onclick="loadStatus()">加载状态</button>
+      <button id="loadBtn" onclick="loadStatus()">🔄 加载状态</button>
     </div>
     
     <div class="status" id="statusContainer">
-      <p style="text-align: center; color: #999;">点击"加载状态"按钮获取数据</p>
+      <p style="text-align: center; color: #999;">👆 请输入 API 地址并点击"加载状态"按钮</p>
     </div>
   </div>
 
   <script>
     const statusContainer = document.getElementById('statusContainer');
     const loadBtn = document.getElementById('loadBtn');
+    let autoRefreshInterval = null;
     
     // 从 URL 参数加载配置
     window.onload = function() {
@@ -172,7 +241,7 @@
       if (apiKey) document.getElementById('apiKey').value = apiKey;
       if (days) document.getElementById('days').value = days;
       
-      // 自动加载
+      // 自动加载（如果有 API 地址）
       if (apiUrl) {
         loadStatus();
       }
@@ -183,49 +252,132 @@
       const apiKey = document.getElementById('apiKey').value.trim();
       const days = parseInt(document.getElementById('days').value) || 30;
       
+      // 验证输入
       if (!apiUrl) {
-        showError('请输入 API 地址');
+        showError('请输入 API 地址', 'API 地址是必填项，请填写完整的 API 端点 URL');
         return;
       }
       
+      if (!apiUrl.startsWith('http://') && !apiUrl.startsWith('https://')) {
+        showError('API 地址格式错误', 'API 地址必须以 http:// 或 https:// 开头');
+        return;
+      }
+      
+      // 清除之前的自动刷新
+      if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+        autoRefreshInterval = null;
+      }
+      
       loadBtn.disabled = true;
-      statusContainer.innerHTML = '<p class="loading">加载中...</p>';
+      loadBtn.textContent = '⏳ 加载中...';
+      statusContainer.innerHTML = '<p class="loading">🔄 正在获取数据...</p>';
       
       try {
-        const headers = {};
+        const headers = {
+          'Content-Type': 'application/json',
+        };
+        
+        // 只有当 API 密钥不为空时才添加
         if (apiKey) {
           headers['X-API-Key'] = apiKey;
         }
         
         const url = new URL(apiUrl);
+        
+        // 添加查询参数
         if (!url.searchParams.has('days')) {
           url.searchParams.append('days', days);
         }
         
-        const response = await fetch(url.toString(), { headers });
-        const data = await response.json();
+        console.log('请求 URL:', url.toString());
+        console.log('请求头:', headers);
         
-        if (data.success) {
-          renderMonitors(data.data, data.timestamp);
+        const response = await fetch(url.toString(), { 
+          headers,
+          method: 'GET',
+        });
+        
+        const contentType = response.headers.get('content-type');
+        console.log('响应状态:', response.status);
+        console.log('响应类型:', contentType);
+        
+        let data;
+        if (contentType && contentType.includes('application/json')) {
+          data = await response.json();
         } else {
-          showError(data.error || '获取数据失败');
+          const text = await response.text();
+          console.log('响应内容:', text);
+          throw new Error(`服务器返回了非 JSON 响应: ${response.status} ${response.statusText}`);
+        }
+        
+        console.log('解析后的数据:', data);
+        
+        if (response.ok && data.success) {
+          renderMonitors(data.data, data.timestamp);
+          
+          // 启动自动刷新（每 5 分钟）
+          autoRefreshInterval = setInterval(() => {
+            loadStatus();
+          }, 300000);
+        } else {
+          const errorMsg = data.error || `请求失败 (${response.status})`;
+          const errorDetails = `HTTP 状态: ${response.status}\n错误信息: ${errorMsg}`;
+          showError(errorMsg, errorDetails, data);
         }
       } catch (error) {
-        showError('请求失败: ' + error.message);
+        console.error('请求失败:', error);
+        let errorDetails = '';
+        
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+          errorDetails = '可能是 CORS 问题或网络连接失败\n\n解决方法：\n1. 检查 API 地址是否正确\n2. 确认 API 服务器已配置 CORS\n3. 检查网络连接\n4. 尝试使用浏览器开发者工具查看详细错误';
+        } else if (error.name === 'SyntaxError') {
+          errorDetails = '服务器返回的数据格式不正确\n\n请检查 API 服务器是否正常运行';
+        } else {
+          errorDetails = `错误类型: ${error.name}\n错误信息: ${error.message}`;
+        }
+        
+        showError('请求失败: ' + error.message, errorDetails);
       } finally {
         loadBtn.disabled = false;
+        loadBtn.textContent = '🔄 加载状态';
       }
     }
     
-    function showError(message) {
-      statusContainer.innerHTML = `<p class="error">❌ ${message}</p>`;
+    function showError(message, details = null, data = null) {
+      let html = `<p class="error">❌ ${message}</p>`;
+      
+      if (details) {
+        html += `<div class="error-details">
+          <strong>详细信息：</strong>
+          <pre>${escapeHtml(details)}</pre>
+        </div>`;
+      }
+      
+      if (data) {
+        html += `<div class="error-details">
+          <strong>服务器响应：</strong>
+          <pre>${escapeHtml(JSON.stringify(data, null, 2))}</pre>
+        </div>`;
+      }
+      
+      statusContainer.innerHTML = html;
     }
     
     function renderMonitors(monitors, timestamp) {
       if (!monitors || monitors.length === 0) {
-        statusContainer.innerHTML = '<p style="text-align: center; color: #999;">暂无监控数据</p>';
+        statusContainer.innerHTML = '<p style="text-align: center; color: #999;">📭 暂无监控数据</p>';
         return;
       }
+      
+      // 计算统计信息
+      const stats = {
+        total: monitors.length,
+        ok: monitors.filter(m => m.status === 'ok').length,
+        down: monitors.filter(m => m.status === 'down').length,
+        paused: monitors.filter(m => m.status === 'paused').length,
+        unknown: monitors.filter(m => m.status === 'unknown').length,
+      };
       
       const statusMap = {
         'ok': { text: '正常', class: 'status-ok' },
@@ -234,7 +386,30 @@
         'unknown': { text: '未知', class: 'status-unknown' }
       };
       
-      const html = monitors.map(monitor => {
+      // 生成统计卡片
+      const summaryHtml = `
+        <div class="status-summary">
+          <div class="summary-item">
+            <div class="label">总计</div>
+            <div class="value">${stats.total}</div>
+          </div>
+          <div class="summary-item ok">
+            <div class="label">正常</div>
+            <div class="value">${stats.ok}</div>
+          </div>
+          <div class="summary-item down">
+            <div class="label">异常</div>
+            <div class="value">${stats.down}</div>
+          </div>
+          <div class="summary-item paused">
+            <div class="label">暂停</div>
+            <div class="value">${stats.paused}</div>
+          </div>
+        </div>
+      `;
+      
+      // 生成监控项列表
+      const monitorsHtml = monitors.map(monitor => {
         const status = statusMap[monitor.status] || statusMap['unknown'];
         return `
           <div class="monitor">
@@ -253,8 +428,12 @@
       const lastUpdated = new Date(timestamp).toLocaleString('zh-CN');
       
       statusContainer.innerHTML = `
-        ${html}
-        <div class="last-updated">最后更新: ${lastUpdated}</div>
+        ${summaryHtml}
+        ${monitorsHtml}
+        <div class="last-updated">
+          最后更新: ${lastUpdated} | 
+          <a href="#" onclick="loadStatus(); return false;" style="color: #007bff;">立即刷新</a>
+        </div>
       `;
     }
     
@@ -263,14 +442,6 @@
       div.textContent = text;
       return div.innerHTML;
     }
-    
-    // 自动刷新（每 5 分钟）
-    setInterval(() => {
-      const apiUrl = document.getElementById('apiUrl').value.trim();
-      if (apiUrl) {
-        loadStatus();
-      }
-    }, 300000);
   </script>
 </body>
 </html>
